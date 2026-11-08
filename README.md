@@ -47,3 +47,15 @@ pwr -n schedule add shutdown +2h
 - `shutdown` / `reboot` / `logout` は実行前に確認します。`-y` で確認をスキップできます。
 - 初回の `shutdown` / `reboot` / `logout` では、ターミナルが System Events を操作する許可を求められます (システム設定 > プライバシーとセキュリティ > オートメーション)。
 - 設定変更と予約には管理者権限が必要なので、自動で `sudo` を付けて実行します。
+
+## リリース手順
+
+1. `Cargo.toml` の `version` を上げてコミットする
+2. 同じバージョンのタグを付けてプッシュする
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+GitHub Actions がユニバーサルバイナリをビルドし、Releases に公開します。タグと `Cargo.toml` のバージョンが一致しない場合は失敗します。
