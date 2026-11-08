@@ -1,4 +1,4 @@
-# pwr
+# pwr-cli
 
 macOS の電源操作を行う Rust 製 CLI。`pmset` / `caffeinate` / System Events をまとめて扱いやすくしたラッパーです。
 
