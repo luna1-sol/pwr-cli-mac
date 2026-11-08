@@ -79,6 +79,10 @@ enum Cmd {
         #[command(flatten)]
         scope: Scope,
     },
+    #[command(
+        about = "Disable sleep entirely, even with the lid closed (sudo, pmset disablesleep)"
+    )]
+    Nosleep { state: OnOff },
 }
 
 #[derive(Args)]
@@ -283,6 +287,21 @@ fn run(cli: Cli) -> Result<()> {
                 OnOff::Off => "0",
             };
             r.run_root("pmset", &[scope.flag(), "lowpowermode", v])?;
+        }
+        Cmd::Nosleep { state } => {
+            let v = match state {
+                OnOff::On => "1",
+                OnOff::Off => "0",
+            };
+            r.run_root("pmset", &["-a", "disablesleep", v])?;
+            if !r.dry_run {
+                match state {
+                    OnOff::On => println!(
+                        "Sleep disabled, even with the lid closed. This persists across reboots; run `pwr nosleep off` to restore."
+                    ),
+                    OnOff::Off => println!("Sleep re-enabled"),
+                }
+            }
         }
     }
     Ok(())

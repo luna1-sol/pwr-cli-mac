@@ -25,6 +25,7 @@ cargo install --path .
 | `pwr settings` | 現在の電源設定 |
 | `pwr set displaysleep 10 --battery` | 電源設定の変更 (sudo)。`--ac` / `--battery` / 省略で両方 |
 | `pwr low-power on\|off` | 低電力モードの切り替え (sudo) |
+| `pwr nosleep on\|off` | スリープを完全に無効化 (sudo)。蓋を閉じてもスリープしない。再起動後も残るので使い終わったら `off` に戻す |
 | `pwr schedule list` | 予約一覧 |
 | `pwr schedule add wake 07:30` | 単発予約 (sudo)。日時は `07:30` / `+2h` / `tomorrow 07:30` / `2026-12-24 07:30` |
 | `pwr schedule cancel wake 07:30` | 単発予約の取り消し |

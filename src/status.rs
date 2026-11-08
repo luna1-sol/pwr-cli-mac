@@ -21,6 +21,7 @@ pub struct Status {
     pub watts: Option<f64>,
     pub temperature_c: Option<f64>,
     pub low_power_mode: Option<bool>,
+    pub sleep_disabled: Option<bool>,
     pub sleep_prevented_by: Option<String>,
 }
 
@@ -38,6 +39,8 @@ fn parse(batt: &str, ioreg: &str, settings: &str) -> Status {
     };
 
     st.low_power_mode = setting_value(settings, "lowpowermode").map(|v| v.starts_with('1'));
+    st.sleep_disabled = (!settings.trim().is_empty())
+        .then(|| setting_value(settings, "SleepDisabled").is_some_and(|v| v.starts_with('1')));
     st.sleep_prevented_by = setting_value(settings, "sleep").and_then(|v| {
         let start = v.find("prevented by ")? + "prevented by ".len();
         Some(v[start..].trim_end_matches(')').to_string())
@@ -148,6 +151,14 @@ pub fn print(st: &Status) {
 
     if let Some(lp) = st.low_power_mode {
         row("Low Power Mode", if lp { "on" } else { "off" }.into());
+    }
+    if let Some(sd) = st.sleep_disabled {
+        let v = if sd {
+            "ON (never sleeps, even with the lid closed; `pwr nosleep off` to restore)"
+        } else {
+            "off"
+        };
+        row("Sleep disabled", v.into());
     }
     if let Some(by) = &st.sleep_prevented_by {
         row("Sleep blocked by", by.clone());
@@ -318,7 +329,21 @@ mod tests {
         assert_eq!(st.health_percent, Some(100.8));
         assert_eq!(st.amperage_ma, Some(-1000));
         assert_eq!(st.low_power_mode, Some(false));
+        assert_eq!(st.sleep_disabled, Some(false));
         assert_eq!(st.sleep_prevented_by.as_deref(), Some("Claude, powerd"));
+    }
+
+    #[test]
+    fn sleep_disabled() {
+        let on = parse(
+            BATT,
+            IOREG,
+            " SleepDisabled\t\t1\n sleep                1\n",
+        );
+        assert_eq!(on.sleep_disabled, Some(true));
+        assert_eq!(on.sleep_prevented_by, None);
+        let unknown = parse(BATT, IOREG, "");
+        assert_eq!(unknown.sleep_disabled, None);
     }
 
     #[test]
