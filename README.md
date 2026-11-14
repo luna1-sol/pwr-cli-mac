@@ -1,77 +1,83 @@
 # pwr-cli
 
-macOS の電源操作を行う Rust 製 CLI。`pmset` / `caffeinate` / System Events をまとめて扱いやすくしたラッパーです。
+English | [日本語](README.ja.md)
 
-## インストール
+A power management CLI for macOS, written in Rust. It wraps `pmset`, `caffeinate`, and System Events behind a single, easy-to-use command.
+
+## Installation
 
 ```bash
 cargo install --path .
 ```
 
-## 使い方
+## Usage
 
-| コマンド | 内容 |
+| Command | Description |
 | --- | --- |
-| `pwr status` (`st`) | 電源・バッテリー残量・残り時間・充放電回数・最大容量など。`--json` 対応 |
-| `pwr sleep` | 今すぐスリープ |
-| `pwr display-off` | ディスプレイだけスリープ |
-| `pwr shutdown` / `pwr reboot` | System Events 経由で通常のシャットダウン・再起動 (未保存の書類は確認される) |
-| `pwr shutdown --force` | `sudo shutdown -h now` で即時実行 |
-| `pwr shutdown --in 30m` | 30 分後にシャットダウン (`sudo killall shutdown` で取り消し) |
-| `pwr logout` | ログアウト |
-| `pwr awake [2h] [-d] [-s]` | スリープ防止。時間省略時は Ctrl-C まで。`-d` でディスプレイも |
-| `pwr awake -- cargo build` | コマンドの実行中だけスリープ防止 |
-| `pwr assertions` | スリープを妨げているプロセスの一覧 (`--all` で全て) |
-| `pwr settings` | 現在の電源設定 |
-| `pwr set displaysleep 10 --battery` | 電源設定の変更 (sudo)。`--ac` / `--battery` / 省略で両方 |
-| `pwr low-power on\|off` | 低電力モードの切り替え (sudo) |
-| `pwr nosleep on\|off` | スリープを完全に無効化 (sudo)。蓋を閉じてもスリープしない。再起動後も残るので使い終わったら `off` に戻す |
-| `pwr schedule list` | 予約一覧 |
-| `pwr schedule add wake 07:30` | 単発予約 (sudo)。日時は `07:30` / `+2h` / `tomorrow 07:30` / `2026-12-24 07:30` |
-| `pwr schedule cancel wake 07:30` | 単発予約の取り消し |
-| `pwr schedule clear` | 単発予約をすべて取り消し |
-| `pwr schedule repeat wakeorpoweron weekdays 08:00` | 毎週の繰り返し予約。曜日は `MTWRFSU` / `daily` / `weekdays` / `weekends` |
-| `pwr schedule repeat-cancel` | 繰り返し予約の取り消し |
+| `pwr status` (`st`) | Power source, battery level, time remaining, cycle count, max capacity, and more. Supports `--json` |
+| `pwr sleep` | Sleep now |
+| `pwr display-off` | Turn off the display only |
+| `pwr shutdown` / `pwr reboot` | Normal shutdown / reboot via System Events (apps can ask to save unsaved documents) |
+| `pwr shutdown --force` | Run immediately with `sudo shutdown -h now` |
+| `pwr shutdown --in 30m` | Shut down in 30 minutes (cancel with `sudo killall shutdown`) |
+| `pwr logout` | Log out |
+| `pwr awake [2h] [-d] [-s]` | Prevent sleep. Runs until Ctrl-C if no duration is given. `-d` also keeps the display awake |
+| `pwr awake -- cargo build` | Prevent sleep only while a command runs |
+| `pwr assertions` | List processes preventing sleep (`--all` for everything) |
+| `pwr settings` | Show current power settings |
+| `pwr set displaysleep 10 --battery` | Change a power setting (sudo). `--ac` / `--battery`, or both if omitted |
+| `pwr low-power on\|off` | Turn Low Power Mode on or off (sudo) |
+| `pwr nosleep on\|off` | Disable sleep entirely (sudo). The Mac won't sleep even with the lid closed. This persists across reboots, so turn it `off` when you're done |
+| `pwr schedule list` | List scheduled events |
+| `pwr schedule add wake 07:30` | Add a one-time event (sudo). Date/time can be `07:30` / `+2h` / `tomorrow 07:30` / `2026-12-24 07:30` |
+| `pwr schedule cancel wake 07:30` | Cancel a one-time event |
+| `pwr schedule clear` | Cancel all one-time events |
+| `pwr schedule repeat wakeorpoweron weekdays 08:00` | Set a weekly repeating event. Days can be `MTWRFSU` / `daily` / `weekdays` / `weekends` |
+| `pwr schedule repeat-cancel` | Cancel repeating events |
 
-予約の種類: `wake` `sleep` `poweron` `shutdown` `reboot` `wakeorpoweron`
+Event types: `wake` `sleep` `poweron` `shutdown` `reboot` `wakeorpoweron`
 
-時間指定は `45s` `30m` `2h` `1h30m` `1d`。単位を省略すると分として扱います。
+Durations: `45s` `30m` `2h` `1h30m` `1d`. A number without a unit is treated as minutes.
 
-すべてのコマンドに `-n` / `--dry-run` を付けると、実行せずに実行予定のコマンドだけを表示します。
+Add `-n` / `--dry-run` to any command to print the commands it would run without executing them.
 
 ```bash
 pwr -n schedule add shutdown +2h
 ```
 
-## 補足
+## Notes
 
-- `shutdown` / `reboot` / `logout` は実行前に確認します。`-y` で確認をスキップできます。
-- 初回の `shutdown` / `reboot` / `logout` では、ターミナルが System Events を操作する許可を求められます (システム設定 > プライバシーとセキュリティ > オートメーション)。
-- 設定変更と予約には管理者権限が必要なので、自動で `sudo` を付けて実行します。
+- `shutdown` / `reboot` / `logout` ask for confirmation first. Use `-y` to skip it.
+- The first time you run `shutdown` / `reboot` / `logout`, macOS asks whether your terminal may control System Events (System Settings > Privacy & Security > Automation).
+- Changing settings and scheduling events require administrator privileges, so `sudo` is added automatically.
 
-## 予約起動とリモート接続の挙動
+## Scheduled wake and remote access
 
-`pwr schedule add wake` で起動したときに画面がつくか、ssh などで接続できるかは、電源と天板の状態によって変わります。これは macOS 自体の動作です。
+Whether the display turns on and whether you can connect over ssh after `pwr schedule add wake` depends on the power source and the lid. This is how macOS itself behaves.
 
-| 電源 | 天板 | 予約時刻の起動 | 画面 | ssh |
+| Power | Lid | At the scheduled time | Display | ssh |
 | --- | --- | --- | --- | --- |
-| 電源アダプタ | 開 | 起動する | つく | つながる |
-| 電源アダプタ | 閉 | DarkWake (画面を点けない起動) | つかない | 常につながる |
-| バッテリー | 開 | 起動する | つく | つながる |
-| バッテリー | 閉 | DarkWake のあとすぐ再スリープ | つかない | つながらない |
+| AC adapter | Open | Wakes up | On | Reachable |
+| AC adapter | Closed | DarkWake (wakes without turning on the display) | Off | Always reachable |
+| Battery | Open | Wakes up | On | Reachable |
+| Battery | Closed | DarkWake, then goes right back to sleep | Off | Not reachable |
 
-- 電源アダプタ接続時に天板を閉じていても ssh がつながるのは、「ネットワークアクセスによるスリープ解除」(`womp`) が電源アダプタ接続時は `1`、バッテリー駆動時は `0` になっているためです。`pmset -g custom` で確認できます。
-- バッテリー駆動で天板を閉じたまま接続したい場合は、`pwr nosleep on` でスリープを無効にするしかありません。熱とバッテリーの消耗に注意し、使い終わったら `pwr nosleep off` で戻してください。
-- 実際にスリープ・起動したかどうかは `pmset -g log` の `Sleep` / `Wake` / `DarkWake` の行で確認できます。
+- ssh stays reachable on AC power with the lid closed because "Wake for network access" (`womp`) is `1` on AC power and `0` on battery. Check it with `pmset -g custom`.
+- To connect on battery with the lid closed, the only option is to disable sleep with `pwr nosleep on`. Watch out for heat and battery drain, and run `pwr nosleep off` when you're done.
+- To check whether the Mac actually slept or woke, look for `Sleep` / `Wake` / `DarkWake` lines in `pmset -g log`.
 
-## リリース手順
+## Releasing
 
-1. `Cargo.toml` の `version` を上げてコミットする
-2. 同じバージョンのタグを付けてプッシュする
+1. Bump `version` in `Cargo.toml` and commit
+2. Tag the same version and push the tag
 
 ```bash
 git tag v0.2.0
 git push origin v0.2.0
 ```
 
-GitHub Actions がユニバーサルバイナリをビルドし、Releases に公開します。タグと `Cargo.toml` のバージョンが一致しない場合は失敗します。
+GitHub Actions builds a universal binary and publishes it to Releases. The workflow fails if the tag doesn't match the version in `Cargo.toml`.
+
+## License
+
+[MIT](LICENSE)
